@@ -22,7 +22,7 @@ namespace Orleans.Workflows
 
         public static Type CompileFromSourceCode(this string typeCSharpDefinition)
         {
-            var typeAssembly = CSharpLanguage.CreateAssemblyFrom(typeCSharpDefinition);
+            var typeAssembly = CSharpLanguage.CompileAssemblyFrom(typeCSharpDefinition);
             return typeAssembly.GetTypes().FirstOrDefault();
         }
     }

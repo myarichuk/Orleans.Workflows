@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
+using ICSharpCode.Decompiler.Metadata;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Host;
@@ -22,6 +23,15 @@ namespace Orleans.Workflows
             .Cast<LanguageVersion>()
             .Max();
 
+        private static readonly Lazy<CSharpLanguage> SourceLanguage = new Lazy<CSharpLanguage>(() => new CSharpLanguage());
+        private static readonly RecyclableMemoryStreamManager RecyclableMemoryStreamManager = new RecyclableMemoryStreamManager();
+        private static readonly List<PortableExecutableReference> SystemReferences =
+            ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")).Split(Path.PathSeparator)
+                .Select(p => MetadataReference.CreateFromFile(p))
+                .ToList();
+
+        private static readonly CSharpParseOptions DefaultOtions = new CSharpParseOptions(kind: SourceCodeKind.Regular, languageVersion: MaxLanguageVersion);
+
         internal readonly IReadOnlyCollection<MetadataReference> References = new[] 
         {
           MetadataReference.CreateFromFile(typeof(Binder).GetTypeInfo().Assembly.Location),
@@ -32,18 +42,13 @@ namespace Orleans.Workflows
           MetadataReference.CreateFromFile(typeof(ValueTuple<>).GetTypeInfo().Assembly.Location)
         };
 
-        private static readonly Lazy<CSharpLanguage> SourceLanguage = new Lazy<CSharpLanguage>(() => new CSharpLanguage());
-        private static readonly RecyclableMemoryStreamManager RecyclableMemoryStreamManager = new RecyclableMemoryStreamManager();
 
-        public SyntaxTree ParseText(string sourceCode, SourceCodeKind kind = SourceCodeKind.Regular)
+        internal SyntaxTree ParseText(string sourceCode, CSharpParseOptions options = null) =>
+            CSharpSyntaxTree.ParseText(sourceCode, options ?? DefaultOtions);
+
+        internal Compilation CreateLibraryCompilation(string assemblyName, bool enableOptimisations = true)
         {
-            var options = new CSharpParseOptions(kind: kind, languageVersion: MaxLanguageVersion);
-
-            return CSharpSyntaxTree.ParseText(sourceCode, options);
-        }
-
-        public Compilation CreateLibraryCompilation(string assemblyName, bool enableOptimisations)
-        {
+            //TODO: make this static to avoid unnecessary allocations
             var options = new CSharpCompilationOptions(
                 OutputKind.DynamicallyLinkedLibrary,
                 optimizationLevel: enableOptimisations ? OptimizationLevel.Release : OptimizationLevel.Debug,
@@ -52,22 +57,16 @@ namespace Orleans.Workflows
             return CSharpCompilation.Create(assemblyName, options: options, references: References);
         }
 
-        public static Assembly CreateAssemblyFrom(string code)
+        public static Assembly CompileAssemblyFrom(string code)
         {
             var syntaxTree = SourceLanguage.Value.ParseText(code);
 
-            var trustedAssembliesPaths = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")).Split(Path.PathSeparator);
-
-            var systemReferences = trustedAssembliesPaths
-                .Select(p => MetadataReference.CreateFromFile(p))
-                .ToList();
-
             var compilation = SourceLanguage.Value
-                .CreateLibraryCompilation(assemblyName: "InMemoryAssembly", enableOptimisations: false)
+                .CreateLibraryCompilation(assemblyName: "InMemoryAssembly")
                 .AddReferences(SourceLanguage
                     .Value
                     .References)
-                .AddReferences(systemReferences)
+                .AddReferences(SystemReferences)
                 .AddSyntaxTrees(syntaxTree);
 
             using (var stream = RecyclableMemoryStreamManager.GetStream())
@@ -85,6 +84,7 @@ namespace Orleans.Workflows
                         throw new CompilationFailedException(compilationErrors);
                 }
             }
+
             return null;
         }
     }
