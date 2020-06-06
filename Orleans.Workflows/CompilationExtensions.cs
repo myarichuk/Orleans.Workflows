@@ -1,24 +1,29 @@
 ﻿using System;
-using System.Reflection;
+using System.Linq;
 using ICSharpCode.Decompiler;
 using ICSharpCode.Decompiler.CSharp;
-using ICSharpCode.Decompiler.CSharp.Syntax;
 using ICSharpCode.Decompiler.TypeSystem;
-using Microsoft.CodeAnalysis.CSharp;
 
 namespace Orleans.Workflows
 {
     public static class CompilationExtensions
-    {
-        public static string ToSourceCode(this Type source, Assembly assembly = null)
+    {       
+        public static string ToSourceCode(this Type source)
         {
-            var decompiler = new CSharpDecompiler((assembly ?? source.Assembly).Location, new DecompilerSettings());
-            return decompiler.DecompileTypeAsString(new FullTypeName(source.AssemblyQualifiedName));
+            if (source.IsNested)
+                throw new NotSupportedException("Decompilation of nested types is not supported");
+
+            if(!source.IsClass)
+                throw new NotSupportedException("Decompilation of non-reference types is not supported");
+
+            var decompiler = new CSharpDecompiler(source.Assembly.Location, new DecompilerSettings());
+            return decompiler.DecompileTypeAsString(new FullTypeName(source.FullName));
         }
 
-        public static Type FromSourceCode(string typeDefinition)
+        public static Type CompileFromSourceCode(this string typeCSharpDefinition)
         {
-            throw new NotImplementedException();
+            var typeAssembly = CSharpLanguage.CreateAssemblyFrom(typeCSharpDefinition);
+            return typeAssembly.GetTypes().FirstOrDefault();
         }
     }
 }

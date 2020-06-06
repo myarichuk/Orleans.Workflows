@@ -7,6 +7,6 @@ namespace Orleans.Workflows
     [Serializable]
     public abstract class WorkflowActivity
     {
-        public abstract Task<ExpandoObject> Execute(ExpandoObject context);
+        public abstract Task<dynamic> ExecuteAsync(dynamic context);
     }
 }

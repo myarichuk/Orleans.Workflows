@@ -6,6 +6,16 @@ using Xunit;
 
 namespace Orleans.Workflows.Tests
 {
+    [Serializable]
+    public class AddTwoNumbers : WorkflowActivity
+    {
+        public override Task<dynamic> ExecuteAsync(dynamic context)
+        {
+            context.Result = context.X + context.Y;
+            return Task.FromResult(context);
+        }
+    }
+
     [Collection(ClusterCollection.Name)]
     public class Basics
     {
@@ -14,29 +24,23 @@ namespace Orleans.Workflows.Tests
         public Basics(ClusterFixture fixture) => _cluster = fixture.Cluster;
 
         [Fact]
-        public void Can_instantiate()
-        {
-            var wb = new WorkflowBuilder();
-            var workflow = 
-                wb.StartWith<AddTwoNumbers>()
-                  .Build();
-            
+        public async Task Can_execute_compiled_activity()
+        {           
             var source = typeof(AddTwoNumbers).ToSourceCode();
+
+            var compiledType = source.CompileFromSourceCode();
+            var worker = (WorkflowActivity)Activator.CreateInstance(compiledType);
+
+            dynamic context = new ExpandoObject();
+            
+            context.X = 5;
+            context.Y = 12;
+
+            var response = await worker.ExecuteAsync(context);
+
+            Assert.Equal(17, response.Result);
         }
 
-        [Serializable]
-        public class AddTwoNumbers : WorkflowActivity
-        {
-            public int X { get; set; }
-
-            public int Y { get; set; }
-
-            public override Task<ExpandoObject> Execute(ExpandoObject context)
-            {
-                dynamic result = new ExpandoObject();
-                result.Result = X + Y;
-                return Task.FromResult(result);
-            }
-        }
+    
     }
 }
