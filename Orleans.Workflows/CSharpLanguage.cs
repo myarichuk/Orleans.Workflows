@@ -62,7 +62,7 @@ namespace Orleans.Workflows
             var syntaxTree = SourceLanguage.Value.ParseText(code);
 
             var compilation = SourceLanguage.Value
-                .CreateLibraryCompilation(assemblyName: "InMemoryAssembly")
+                .CreateLibraryCompilation(assemblyName: $"InMemoryAssembly_{Guid.NewGuid()}")
                 .AddReferences(SourceLanguage
                     .Value
                     .References)
