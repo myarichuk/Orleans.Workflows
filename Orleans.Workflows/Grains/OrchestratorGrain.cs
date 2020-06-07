@@ -29,6 +29,12 @@ namespace Orleans.Workflows.Grains
             _logger = logger;
         }
 
+        public Task<ActivityContext> ExecuteSingle(WorkflowActivity activity, ActivityContext context)
+        {
+            var worker = GrainFactory.GetGrain<IWorkerGrain>(Guid.NewGuid());
+            return activity.ExecuteAsync(context);
+        }
+
         public Task Execute(WorkflowDefinition workflow)
         {
             return Task.CompletedTask;

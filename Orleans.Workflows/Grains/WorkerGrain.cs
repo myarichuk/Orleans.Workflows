@@ -1,26 +1,21 @@
-﻿using System.Threading.Tasks;
-using Jurassic;
+﻿using System.Dynamic;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Orleans.Concurrency;
-using Orleans.Workflows.Workflow;
 
 namespace Orleans.Workflows.Grains
 {
     [StatelessWorker]
-    public class WorkerGrain : Grain
+    [Reentrant]
+    public class WorkerGrain : Grain, IWorkerGrain
     {
-        private readonly ScriptEngine _engine;
         private readonly ILogger<WorkerGrain> _logger;
 
-        public WorkerGrain(ScriptEngine engine, ILogger<WorkerGrain> logger)
+        public WorkerGrain(ILogger<WorkerGrain> logger)
         {
-            _engine = engine;
             _logger = logger;
         }
 
-        public Task Execute(WorkflowActivity activity)
-        {
-            return Task.CompletedTask;
-        }
+        public Task<ActivityContext> Execute(WorkflowActivity activity, ActivityContext context) => activity.ExecuteAsync(context);
     }
 }

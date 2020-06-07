@@ -1,8 +1,6 @@
 ﻿using System.Reflection;
-using Jurassic;
 using Microsoft.Extensions.DependencyInjection;
 using Orleans.Hosting;
-using Orleans.Workflows.JsProxies;
 
 namespace Orleans.Workflows
 {
@@ -13,14 +11,6 @@ namespace Orleans.Workflows
             siloBuilder
                 .ConfigureServices(services =>
                 {
-                    services.AddSingleton(serviceProvider =>
-                    {
-                        var jsEngine = new ScriptEngine();
-
-                        jsEngine.SetGlobalValue("Random", new RandomConstructor(jsEngine));
-
-                        return jsEngine;
-                    });
                 })
                 .ConfigureApplicationParts(cfg =>
                 {

@@ -2,6 +2,7 @@ using System;
 using System.Dynamic;
 using System.Threading.Tasks;
 using Orleans.TestingHost;
+using Orleans.Workflows.Interfaces;
 using Xunit;
 
 namespace Orleans.Workflows.Tests
@@ -9,9 +10,11 @@ namespace Orleans.Workflows.Tests
     [Serializable]
     public class AddTwoNumbers : WorkflowActivity
     {
-        public override Task<dynamic> ExecuteAsync(dynamic context)
+        public override Task<ActivityContext> ExecuteAsync(ActivityContext context)
         {
-            context.Result = context.X + context.Y;
+            var input = (dynamic)context;
+
+            input.Result = input.X + input.Y;
             return Task.FromResult(context);
         }
     }
@@ -31,7 +34,7 @@ namespace Orleans.Workflows.Tests
             var compiledType = source.CompileFromSourceCode();
             var worker = (WorkflowActivity)Activator.CreateInstance(compiledType);
 
-            dynamic context = new ExpandoObject();
+            dynamic context = new ActivityContext();
             
             context.X = 5;
             context.Y = 12;
@@ -41,6 +44,19 @@ namespace Orleans.Workflows.Tests
             Assert.Equal(17, response.Result);
         }
 
-    
+        [Fact]
+        public async Task Can_execute_remote_activity()
+        {
+            var orchestrator = _cluster.Client.GetGrain<IOrchestratorGrain>(Guid.NewGuid());
+            var activity = new AddTwoNumbers();
+
+            dynamic context = new ActivityContext();
+
+            context.X = 5;
+            context.Y = 12;
+
+            var activityResult = await orchestrator.ExecuteSingle(activity, context);
+            Assert.Equal(17, activityResult.Result);
+        }
     }
 }
