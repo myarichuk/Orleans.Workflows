@@ -5,6 +5,6 @@ namespace Orleans.Workflows.Grains
 {
     public interface IWorkerGrain : IGrainWithGuidKey
     {
-        Task<ActivityContext> Execute(WorkflowActivity activity, ActivityContext context);
+        Task<ActivityContext> ExecuteAsync(WorkflowActivity activity, ActivityContext context);
     }
 }

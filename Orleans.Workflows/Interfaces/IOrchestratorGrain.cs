@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace Orleans.Workflows.Interfaces
 {
-    public interface IOrchestratorGrain : IGrainWithGuidKey
+    public interface IWorkflowExecutorGrain : IGrainWithGuidKey
     {
         Task Execute(WorkflowDefinition workflow);
 

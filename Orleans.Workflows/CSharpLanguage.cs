@@ -46,8 +46,14 @@ namespace Orleans.Workflows
         internal SyntaxTree ParseText(string sourceCode, CSharpParseOptions options = null) =>
             CSharpSyntaxTree.ParseText(sourceCode, options ?? DefaultOtions);
 
-        internal Compilation CreateLibraryCompilation(string assemblyName, bool enableOptimisations = true)
+        internal Compilation CreateLibraryCompilation(string assemblyName)
         {
+#if RELEASE
+            var enableOptimisations = true;
+#else
+            var enableOptimisations = false;
+#endif
+
             //TODO: make this static to avoid unnecessary allocations
             var options = new CSharpCompilationOptions(
                 OutputKind.DynamicallyLinkedLibrary,
@@ -60,7 +66,7 @@ namespace Orleans.Workflows
         public static Assembly CompileAssemblyFrom(string code)
         {
             var syntaxTree = SourceLanguage.Value.ParseText(code);
-
+            
             var compilation = SourceLanguage.Value
                 .CreateLibraryCompilation(assemblyName: $"InMemoryAssembly_{Guid.NewGuid()}")
                 .AddReferences(SourceLanguage

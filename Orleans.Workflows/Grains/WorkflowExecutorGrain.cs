@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Orleans.Runtime;
 using Orleans.Workflows.Interfaces;
-using Orleans.Workflows.Workflow;
 
 namespace Orleans.Workflows.Grains
 {
@@ -18,12 +17,12 @@ namespace Orleans.Workflows.Grains
         public EdgeWithPredicate Current { get; set; }
     }
 
-    public class OrchestratorGrain : Grain, IOrchestratorGrain
+    public class WorkflowExecutorGrain : Grain, IWorkflowExecutorGrain
     {
         private readonly IPersistentState<WorkflowState> _flowState;
-        private readonly ILogger<OrchestratorGrain> _logger;
+        private readonly ILogger<WorkflowExecutorGrain> _logger;
 
-        public OrchestratorGrain([PersistentState(nameof(_flowState))] IPersistentState<WorkflowState> flowState, ILogger<OrchestratorGrain> logger)
+        public WorkflowExecutorGrain([PersistentState(nameof(_flowState))] IPersistentState<WorkflowState> flowState, ILogger<WorkflowExecutorGrain> logger)
         {
             _flowState = flowState;
             _logger = logger;
@@ -31,8 +30,19 @@ namespace Orleans.Workflows.Grains
 
         public Task<ActivityContext> ExecuteSingle(WorkflowActivity activity, ActivityContext context)
         {
+            //TODO: consider different grain allocation strategy
+            //perhaps it should be created from hashcode of activity implementation or something
             var worker = GrainFactory.GetGrain<IWorkerGrain>(Guid.NewGuid());
-            return activity.ExecuteAsync(context);
+            try
+            {
+                return worker.ExecuteAsync(activity,context);
+            }
+            catch(Exception e)
+            {
+                _logger.LogError(e, $"Unhandled exception thrown while running activity of type = {activity.GetType().FullName}");
+            }
+
+            return Task.FromResult<ActivityContext>(null);
         }
 
         public Task Execute(WorkflowDefinition workflow)

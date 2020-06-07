@@ -11,6 +11,8 @@ namespace Orleans.Workflows.Workflow
     [Serializer(typeof(WorkflowActivity))]
     public static class ActivityWorkflowSerializer
     {
+        private static readonly ConcurrentDictionary<string, Type> ActivityTypeCache = new ConcurrentDictionary<string, Type>(StringComparer.InvariantCultureIgnoreCase);
+
         [CopierMethod]
         public static object DeepCopier(object original, ICopyContext context)
         {
@@ -24,20 +26,20 @@ namespace Orleans.Workflows.Workflow
         public static void Serializer(object untypedInput, ISerializationContext context, Type expected)
         {
             var type = untypedInput.GetType();
+
             var serialized = JsonSerializer.Serialize(untypedInput);
 
+            //TODO: differentiate between activities defined in Orleans.Workflows and activities defined in other assemblies (no need to compile/decompile)
             SerializationManager.SerializeInner(type.ToSourceCode(), context);
             SerializationManager.SerializeInner(serialized, context);
         }
-
-        private static readonly ConcurrentDictionary<string, Type> _workflowTypes = new ConcurrentDictionary<string, Type>(StringComparer.InvariantCultureIgnoreCase);
 
         [DeserializerMethod]
         public static object Deserializer(Type expected, IDeserializationContext context)
         {
             var typeSourceCode = SerializationManager.DeserializeInner<string>(context);
-
-            var workflowType = _workflowTypes.GetOrAdd(typeSourceCode, src => src.CompileFromSourceCode());
+            
+            var workflowType = ActivityTypeCache.GetOrAdd(typeSourceCode, src => src.CompileFromSourceCode());
 
             var objectBytes = SerializationManager.DeserializeInner<byte[]>(context);
 

@@ -16,6 +16,6 @@ namespace Orleans.Workflows.Grains
             _logger = logger;
         }
 
-        public Task<ActivityContext> Execute(WorkflowActivity activity, ActivityContext context) => activity.ExecuteAsync(context);
+        public Task<ActivityContext> ExecuteAsync(WorkflowActivity activity, ActivityContext context) => activity.ExecuteAsync(context);
     }
 }

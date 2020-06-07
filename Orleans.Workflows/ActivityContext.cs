@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Dynamic;
-using System.Text;
 
 namespace Orleans.Workflows
 {
@@ -20,6 +19,8 @@ namespace Orleans.Workflows
             Data[binder.Name] = value;
             return true;
         }
+
+        public override IEnumerable<string> GetDynamicMemberNames() => Data.Keys;
 
         public static implicit operator Dictionary<string, object>(ActivityContext context) => context.Data;
 

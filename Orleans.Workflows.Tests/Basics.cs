@@ -47,7 +47,7 @@ namespace Orleans.Workflows.Tests
         [Fact]
         public async Task Can_execute_remote_activity()
         {
-            var orchestrator = _cluster.Client.GetGrain<IOrchestratorGrain>(Guid.NewGuid());
+            var orchestrator = _cluster.Client.GetGrain<IWorkflowExecutorGrain>(Guid.NewGuid());
             var activity = new AddTwoNumbers();
 
             dynamic context = new ExpandoObject();
