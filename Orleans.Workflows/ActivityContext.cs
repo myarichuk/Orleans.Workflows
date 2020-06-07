@@ -13,15 +13,30 @@ namespace Orleans.Workflows
 
         public int Count => Data.Count;
 
-        public override bool TryGetMember(
-            GetMemberBinder binder, out object result) => Data.TryGetValue(binder.Name, out result);
+        public override bool TryGetMember(GetMemberBinder binder, out object result) => Data.TryGetValue(binder.Name, out result);
 
-        public override bool TrySetMember(
-            SetMemberBinder binder, object value)
+        public override bool TrySetMember(SetMemberBinder binder, object value)
         {
             Data[binder.Name] = value;
-
             return true;
+        }
+
+        public static implicit operator Dictionary<string, object>(ActivityContext context) => context.Data;
+
+        public static implicit operator ActivityContext(ExpandoObject eo) =>
+            new ActivityContext
+            {
+                Data = new Dictionary<string, object>(eo)
+            };
+
+        public static implicit operator ExpandoObject(ActivityContext context)
+        {
+            var eo = new ExpandoObject();
+
+            foreach(var kvp in context.Data)
+                ((IDictionary<string, object>)eo).Add(kvp);
+
+            return eo;
         }
     }
 }

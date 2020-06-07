@@ -50,7 +50,7 @@ namespace Orleans.Workflows.Tests
             var orchestrator = _cluster.Client.GetGrain<IOrchestratorGrain>(Guid.NewGuid());
             var activity = new AddTwoNumbers();
 
-            dynamic context = new ActivityContext();
+            dynamic context = new ExpandoObject();
 
             context.X = 5;
             context.Y = 12;
