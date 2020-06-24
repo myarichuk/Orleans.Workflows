@@ -7,7 +7,6 @@ using Xunit;
 
 namespace Orleans.Workflows.Tests
 {
-    [Serializable]
     public class AddTwoNumbers : WorkflowActivity
     {
         public override Task<ActivityContext> ExecuteAsync(ActivityContext context)
@@ -15,6 +14,17 @@ namespace Orleans.Workflows.Tests
             var input = (dynamic)context;
 
             input.Result = input.X + input.Y;
+            return Task.FromResult(context);
+        }
+    }
+
+    public class MultiplyTwoNumbers : WorkflowActivity
+    {
+        public override Task<ActivityContext> ExecuteAsync(ActivityContext context)
+        {
+            var input = (dynamic)context;
+
+            input.Result = input.X * input.Y;
             return Task.FromResult(context);
         }
     }
@@ -28,14 +38,14 @@ namespace Orleans.Workflows.Tests
 
         [Fact]
         public async Task Can_execute_compiled_activity()
-        {           
+        {
             var source = typeof(AddTwoNumbers).ToSourceCode();
 
             var compiledType = source.CompileFromSourceCode();
             var worker = (WorkflowActivity)Activator.CreateInstance(compiledType);
 
             dynamic context = new ActivityContext();
-            
+
             context.X = 5;
             context.Y = 12;
 
@@ -55,8 +65,19 @@ namespace Orleans.Workflows.Tests
             context.X = 5;
             context.Y = 12;
 
-            var activityResult = await orchestrator.ExecuteSingle(activity, context);
+            var activityResult = await orchestrator.ExecuteSingleAsync(activity, context);
             Assert.Equal(17, activityResult.Result);
+        }
+
+        [Fact]
+        public async Task Can_execute_activity_sequence()
+        {
+            var workflowDefinition = new WorkflowBuilder()
+                .StartWith<AddTwoNumbers>()
+                    .Input(ctx => ctx["X"], 12)
+                    .Input(ctx => ctx["Y"], 24)
+                .Then<MultiplyTwoNumbers>()
+                .Build();
         }
     }
 }

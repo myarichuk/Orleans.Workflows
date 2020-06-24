@@ -12,9 +12,11 @@ namespace Orleans.Workflows.Grains
     [Serializable]
     public class WorkflowState
     {
-        public ExpandoObject ExecutionContext { get; set; }
+        public ActivityContext ExecutionContext { get; set; }
 
         public EdgeWithPredicate Current { get; set; }
+
+        public HashSet<Guid> Visited { get; set; }
     }
 
     public class WorkflowExecutorGrain : Grain, IWorkflowExecutorGrain
@@ -22,13 +24,15 @@ namespace Orleans.Workflows.Grains
         private readonly IPersistentState<WorkflowState> _flowState;
         private readonly ILogger<WorkflowExecutorGrain> _logger;
 
-        public WorkflowExecutorGrain([PersistentState(nameof(_flowState))] IPersistentState<WorkflowState> flowState, ILogger<WorkflowExecutorGrain> logger)
+        public WorkflowExecutorGrain(
+            [PersistentState(nameof(_flowState))] IPersistentState<WorkflowState> flowState,
+            ILogger<WorkflowExecutorGrain> logger)
         {
             _flowState = flowState;
             _logger = logger;
         }
 
-        public Task<ActivityContext> ExecuteSingle(WorkflowActivity activity, ActivityContext context)
+        public Task<ActivityContext> ExecuteSingleAsync(WorkflowActivity activity, ActivityContext context)
         {
             //TODO: consider different grain allocation strategy
             //perhaps it should be created from hashcode of activity implementation or something
@@ -45,9 +49,9 @@ namespace Orleans.Workflows.Grains
             return Task.FromResult<ActivityContext>(null);
         }
 
-        public Task Execute(WorkflowDefinition workflow)
+        public Task<ActivityContext> ExecuteAsync(WorkflowDefinition workflow)
         {
-            return Task.CompletedTask;
+            return Task.FromResult((ActivityContext)null);
         }
     }
 }

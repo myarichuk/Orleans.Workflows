@@ -1,48 +1,40 @@
 ﻿using System;
-using System.Dynamic;
+using System.Collections.Generic;
+using System.Linq.Expressions;
 using QuickGraph;
 
 namespace Orleans.Workflows
 {
+    [Serializable]
     public class EdgeWithPredicate : IEdge<WorkflowActivity>
     {
         public WorkflowActivity Source { get; set; }
         public WorkflowActivity Target { get; set; }
 
-        public Func<ExpandoObject, bool> Predicate { get; set; } = _ => true;
+        public Expression<Func<ActivityContext, bool>> Predicate { get; set; } = _ => true;
     }
 
     public class WorkflowDefinition
     {
-        private readonly AdjacencyGraph<WorkflowActivity, EdgeWithPredicate> _flow;
+        public class IOMappingContext
+        {
+            public Dictionary<WorkflowActivity, List<Expression<Action<ActivityContext>>>> InputMapping { get; } = new Dictionary<WorkflowActivity, List<Expression<Action<ActivityContext>>>>();
+            public Dictionary<WorkflowActivity, List<Expression<Action<ActivityContext>>>> OutputMapping { get; } = new Dictionary<WorkflowActivity, List<Expression<Action<ActivityContext>>>>();
+        }
+
+        protected readonly AdjacencyGraph<WorkflowActivity, EdgeWithPredicate> _flow;
+
+        public IOMappingContext Context { get; }
 
         public WorkflowActivity FirstActivity { get; }
+
         public IGraph<WorkflowActivity, EdgeWithPredicate> Flow => _flow;
 
-        public WorkflowDefinition(AdjacencyGraph<WorkflowActivity, EdgeWithPredicate> flow, WorkflowActivity first)
+        public WorkflowDefinition(AdjacencyGraph<WorkflowActivity, EdgeWithPredicate> flow, WorkflowActivity first, IOMappingContext context)
         {
             _flow = flow;
             FirstActivity = first;
+            Context = context;
         }
-    }
-
-    public class WorkflowBuilder
-    {
-        private readonly AdjacencyGraph<WorkflowActivity, EdgeWithPredicate> _flow = 
-            new AdjacencyGraph<WorkflowActivity, EdgeWithPredicate>(true);
-
-        private WorkflowActivity _first;
-        
-        public WorkflowBuilder StartWith<TActivity>()
-            where TActivity : WorkflowActivity, new()
-        {
-            var firstActivity = new TActivity();
-            _flow.AddVertex(firstActivity);
-            _first = firstActivity;
-
-            return this;
-        }
-
-        public WorkflowDefinition Build() => new WorkflowDefinition(_flow, _first);
     }
 }

@@ -1,13 +1,57 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 using Force.DeepCloner;
+using Humanizer.Bytes;
 using Orleans.CodeGeneration;
 using Orleans.Serialization;
+using Serialize.Linq.Serializers;
 using Utf8Json;
+using JsonSerializer = Utf8Json.JsonSerializer;
 
 namespace Orleans.Workflows.Workflow
 {
+    [Serializer(typeof(EdgeWithPredicate))]
+    public static class EdgeWithPredicateSerializer
+    {
+        private static readonly ExpressionSerializer ExpressionSerializer = new ExpressionSerializer(new Serialize.Linq.Serializers.JsonSerializer());
+
+        [CopierMethod]
+        public static object DeepCopier(object original, ICopyContext context)
+        {
+            var clone = original.DeepClone();
+            context.RecordCopy(original, clone);
+
+            return clone;
+        }
+
+        [SerializerMethod]
+        public static void Serializer(object untypedInput, ISerializationContext context, Type expected)
+        {
+            var input = (EdgeWithPredicate)untypedInput;
+
+            SerializationManager.SerializeInner(input.Source, context);
+            SerializationManager.SerializeInner(input.Target, context);
+            SerializationManager.SerializeInner(ExpressionSerializer.SerializeBinary(input.Predicate), context);
+        }
+
+        [DeserializerMethod]
+        public static object Deserializer(Type expected, IDeserializationContext context)
+        {
+            var source = SerializationManager.DeserializeInner<WorkflowActivity>(context);
+            var target = SerializationManager.DeserializeInner<WorkflowActivity>(context);
+            var predicate = (Expression<Func<ActivityContext, bool>>)ExpressionSerializer.DeserializeBinary(SerializationManager.DeserializeInner<byte[]>(context));
+
+            return new EdgeWithPredicate
+            {
+                Source = source,
+                Target = target,
+                Predicate = predicate
+            };
+        }
+    }
+
     [Serializer(typeof(WorkflowActivity))]
     public static class ActivityWorkflowSerializer
     {

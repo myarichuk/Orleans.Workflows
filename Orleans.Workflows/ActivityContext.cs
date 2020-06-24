@@ -12,6 +12,24 @@ namespace Orleans.Workflows
 
         public int Count => Data.Count;
 
+        public object this[string key]
+        {
+            get
+            {
+                if (Data.TryGetValue(key, out var value))
+                    return value;
+                
+                return null;
+            }
+            set
+            {
+                if (Data.ContainsKey(key))
+                    Data[key] = value;
+                else
+                    Data.Add(key, value);
+            }
+        }
+
         public override bool TryGetMember(GetMemberBinder binder, out object result) => Data.TryGetValue(binder.Name, out result);
 
         public override bool TrySetMember(SetMemberBinder binder, object value)
