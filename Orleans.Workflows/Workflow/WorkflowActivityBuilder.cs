@@ -19,7 +19,6 @@ namespace Orleans.Workflows
         }
 
         public WorkflowActivityBuilder<TActivity> Input<TValue>(Expression<Func<TActivity, TValue>> propertySelector, Expression<Func<ActivityContext, object>> valueExtractor)
-            where TValue : struct
         {
             //TODO: proper error handling, invoke can throw casting exception due to ActivityContext's nature
             var setter = ExpressionHelper.CreateWorkflowSetter(propertySelector, valueExtractor);
@@ -29,7 +28,6 @@ namespace Orleans.Workflows
         }
 
         public WorkflowActivityBuilder<TActivity> Input<TValue>(Expression<Func<TActivity, TValue>> propertySelector, TValue paramValue)
-            where TValue : struct
         {
             var setter = ExpressionHelper.CreateWorkflowSetter(propertySelector, paramValue);
 

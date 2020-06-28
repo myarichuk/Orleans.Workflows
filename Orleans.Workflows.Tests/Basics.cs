@@ -10,6 +10,7 @@ namespace Orleans.Workflows.Tests
 {
     public class AddTwoNumbers : WorkflowActivity
     {
+        public string Test { get; set; }
         public int X { get; set; }
         public int Y { get; set; }
 
@@ -67,6 +68,7 @@ namespace Orleans.Workflows.Tests
         {
             var workflowDefinition = new WorkflowBuilder()
                 .StartWith<AddTwoNumbers>()
+                    .Input(activity => activity.Test, "ABC")
                     .Input(activity => activity.X, 12)
                     .Input(activity => activity.Y, 24)
                     .Output(activity => activity.Result, ctx => ctx["Result"])
