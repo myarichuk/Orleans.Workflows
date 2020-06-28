@@ -32,23 +32,6 @@ namespace Orleans.Workflows.Grains
             _logger = logger;
         }
 
-        public Task<ActivityContext> ExecuteSingleAsync(WorkflowActivity activity, ActivityContext context)
-        {
-            //TODO: consider different grain allocation strategy
-            //perhaps it should be created from hashcode of activity implementation or something
-            var worker = GrainFactory.GetGrain<IWorkerGrain>(Guid.NewGuid());
-            try
-            {
-                return worker.ExecuteAsync(activity,context);
-            }
-            catch(Exception e)
-            {
-                _logger.LogError(e, $"Unhandled exception thrown while running activity of type = {activity.GetType().FullName}");
-            }
-
-            return Task.FromResult<ActivityContext>(null);
-        }
-
         public Task<ActivityContext> ExecuteAsync(WorkflowDefinition workflow)
         {
             return Task.FromResult((ActivityContext)null);

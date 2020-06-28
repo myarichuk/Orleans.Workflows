@@ -9,8 +9,6 @@ namespace Orleans.Workflows
         internal readonly AdjacencyGraph<WorkflowActivity, EdgeWithPredicate> _flow = 
             new AdjacencyGraph<WorkflowActivity, EdgeWithPredicate>(true);
 
-        internal readonly WorkflowDefinition.IOMappingContext _context = new WorkflowDefinition.IOMappingContext();
-
         private WorkflowActivity _first;       
 
         public WorkflowActivityBuilder<TActivity> StartWith<TActivity>(Action<TActivity> configure = null)
@@ -25,6 +23,6 @@ namespace Orleans.Workflows
             return new WorkflowActivityBuilder<TActivity>(this, firstActivity);
         }
 
-        public WorkflowDefinition Build() => new WorkflowDefinition(_flow, _first, _context);
+        public WorkflowDefinition Build() => new WorkflowDefinition(_flow, _first);
     }
 }

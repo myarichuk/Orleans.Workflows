@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 
 namespace Orleans.Workflows
@@ -8,6 +10,9 @@ namespace Orleans.Workflows
     {
         public Guid Id { get; set; } = Guid.NewGuid();
 
-        public abstract Task<ActivityContext> ExecuteAsync(ActivityContext context);
+        public List<Expression<Action<WorkflowActivity>>> InputSetters { get; } = new List<Expression<Action<WorkflowActivity>>>();
+        public List<Expression<Action<WorkflowActivity, ActivityContext>>> InputSettersWithContext { get; } = new List<Expression<Action<WorkflowActivity, ActivityContext>>>();
+        
+        public abstract Task ExecuteAsync(ActivityContext context);
     }
 }

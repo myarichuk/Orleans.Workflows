@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq.Expressions;
 
 namespace Orleans.Workflows
@@ -10,40 +12,36 @@ namespace Orleans.Workflows
         private readonly WorkflowBuilder _workflowBuilder;
         private readonly TActivity _currentActivity;
 
-
         public WorkflowActivityBuilder(WorkflowBuilder workflowBuilder, TActivity activity)
         {
             _currentActivity = activity;
             _workflowBuilder = workflowBuilder;
         }
 
-        public WorkflowActivityBuilder<TActivity> Input<TValue>(Expression<Func<ActivityContext, TValue>> propertySelector, TValue paramValue)
+        public WorkflowActivityBuilder<TActivity> Input<TValue>(Expression<Func<TActivity, TValue>> propertySelector, Expression<Func<ActivityContext, object>> valueExtractor)
         {
-            var setter = ExpressionHelper.CreateSetter(propertySelector, paramValue);
-            if(_workflowBuilder._context.InputMapping.TryGetValue(_currentActivity, out var inputs))
-            {
-                inputs.Add(setter);
-            }
-            else
-            {
-                _workflowBuilder._context.InputMapping.Add(_currentActivity, new List<Expression<Action<ActivityContext>>> { setter });
-            }
+            //TODO: proper error handling, invoke can throw casting exception due to ActivityContext's nature
+            var setter = ExpressionHelper.CreateWorkflowSetter(propertySelector, valueExtractor);
+
+            _currentActivity.InputSettersWithContext.Add((activity, ctx) => setter.Compile().Invoke((TActivity)activity, ctx));
             return this;
         }
 
-        public WorkflowActivityBuilder<TActivity> Output<TValue>(Expression<Func<ActivityContext, TValue>> outputPropertySelector, Expression<Func<ActivityContext, TValue>> outputSetter)
+        public WorkflowActivityBuilder<TActivity> Input<TValue>(Expression<Func<TActivity, TValue>> propertySelector, TValue paramValue)
         {
-            var entityParameterExpression = (ParameterExpression)((MemberExpression)outputPropertySelector.Body).Expression;
-            var setter = Expression.Lambda<Action<ActivityContext>>(Expression.Assign(outputSetter.Body, outputPropertySelector), entityParameterExpression);
-            
-            if (_workflowBuilder._context.OutputMapping.TryGetValue(_currentActivity, out var outputs))
-            {
-                outputs.Add(setter);
-            }
-            else
-            {
-               _workflowBuilder._context.OutputMapping.Add(_currentActivity, new List<Expression<Action<ActivityContext>>> { setter });
-            }
+            var setter = ExpressionHelper.CreateWorkflowSetter(propertySelector, paramValue);
+
+            setter.Compile().Invoke(_currentActivity);
+
+            _currentActivity.InputSetters.Add(activity => setter.Compile().Invoke((TActivity)activity));
+            return this;
+        }
+
+        public WorkflowActivityBuilder<TActivity> Output<TValue>(Expression<Func<TActivity, TValue>> outputPropertySelector, Expression<Func<ActivityContext, object>> outputSetter)
+        {
+            //var entityParameterExpression = (ParameterExpression)((MemberExpression)outputPropertySelector.Body).Expression;
+            //var setter = Expression.Lambda<Action<ActivityContext>>(Expression.Assign(outputSetter.Body, outputPropertySelector), entityParameterExpression);
+      
             return this;
         }
 

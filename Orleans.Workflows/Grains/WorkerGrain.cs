@@ -16,6 +16,11 @@ namespace Orleans.Workflows.Grains
             _logger = logger;
         }
 
-        public Task<ActivityContext> ExecuteAsync(WorkflowActivity activity, ActivityContext context) => activity.ExecuteAsync(context);
+        public async Task<ActivityContext> ExecuteAsync(WorkflowActivity activity, ActivityContext context)
+        {
+            await activity.ExecuteAsync(context);
+            //TODO: add execution of output mapping between activity and context
+            return context;
+        }
     }
 }
